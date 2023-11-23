@@ -1,0 +1,18 @@
+package com.example.todo.dto.response;
+
+import lombok.*;
+
+import java.util.List;
+
+@Setter @Getter
+@ToString @EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TodoListResponseDTO {
+
+    private String errer; // 에러 발생 시 에러 메세지를 담을 필드
+    private List<TodoDetailResponseDTO> todos;
+
+
+}
