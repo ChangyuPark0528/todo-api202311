@@ -27,7 +27,7 @@ public class TokenProvider {
     /**
     * JSON Web Token을 생성하는 메서드
     * @param userEntity - 토큰의 내용(클레임)에 포함될 유저 정보
-     * @return - 생성된 JSON을 암호화 한 토큰값
+    * @return - 생성된 JSON을 암호화 한 토큰값
     * */
 
     public String createToken(User userEntity) {
@@ -53,22 +53,21 @@ public class TokenProvider {
         // 추가 클래임 정의
         Map<String, String> claims = new HashMap<>();
         claims.put("email", userEntity.getEmail());
-//        claims.put("role", userEntity.getRole());
+        claims.put("role", userEntity.getRole().toString());
 
 
         return Jwts.builder()
                 // token header에 들어갈 서명
                 .signWith(
                         Keys.hmacShaKeyFor(SECRET_KEY.getBytes()),
-                        SignatureAlgorithm.ES512
+                        SignatureAlgorithm.HS512
                 )
                 // token payload에 들어갈 클레임 설정.
+                .setClaims(claims) // 추가 클레임은 먼저 설정해야 함.
                 .setIssuer("Todo운영자") // iss: 발급자 정보
                 .setIssuedAt(new Date()) // iat: 발급 시간
                 .setExpiration(expiry) // exp: 만료 시간
-                //--------------------------------------------------------
                 .setSubject(userEntity.getId()) // sub: 토큰을 식별할 수 있는 주요 데이터
-                .setClaims(claims)
                 .compact();
     }
 
