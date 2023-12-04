@@ -43,8 +43,8 @@ public class WebSecurityConfig {
                 // 여기서부터 어떤 요청을 인증 안 할 것인지, 언제 인증을 할 것인지 설정 -> 정해져 있음
                 .authorizeRequests()
                 // /api/auth/** 은 permit이지만, /promote는 검증이 필요하기 때문에 추가.(순서 조심)
-                .antMatchers(HttpMethod.PUT, "/api/auth/promote") // 순서 중요함.
-                .authenticated()
+                .antMatchers(HttpMethod.PUT, "/api/auth/promote").authenticated()
+                .antMatchers("/api/auth/load-profile").authenticated()
                 // antMatchers(): '/api/auth'로 시작하는 요청과 '/'요청은 권한 검사 없이 허용하겠다. 라는 뜻임
                 .antMatchers("/", "/api/auth/**").permitAll()// permitAll(): 모두 인증시키겠다.
                 // '/api/todos'라는 요청이 POST로 들어오고, Role 값이 ADMIN인 경우 권한 검사 없이 허용하겠다.
