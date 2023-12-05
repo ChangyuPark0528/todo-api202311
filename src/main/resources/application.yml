@@ -25,8 +25,8 @@ jwt:
   secret: 928Tt2wf5DZT5yH80ZwReyFEQB3UEIBN+S5mYVUVfh1RgL9M2lFcZn5uXkSrrrOvHhpofrxA1AnTh8X1K3Zr+Q==
 
 kakao:
-  client_id: 0695349d84286b3f6c118d1792b48ba0
-  redirect_url: http://localhost:3000/auth/redirected/kakao
+  client_id: dc7e6161a7c62c424bd5c20892891b30
+  redirect_url: http://localhost:3000/oauth/redirected/kakao
   client_secret: KXe6bt4AjeijSW9CkOcoxa5brNbcrH7w
 
 # 업로드 파일 저장 경로

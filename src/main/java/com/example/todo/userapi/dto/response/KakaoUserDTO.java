@@ -1,10 +1,10 @@
 package com.example.todo.userapi.dto.response;
 
+import com.example.todo.userapi.entity.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.springframework.context.annotation.Profile;
 
 import java.time.LocalDateTime;
 
@@ -33,8 +33,28 @@ public class KakaoUserDTO {
             @JsonProperty("profile_image_url")
             private String profileImageUrl;
         }
-
-
-
     }
+
+    public User toEntity() {
+        return User.builder()
+                .email(this.kakaoAccount.email)
+                .userName(this.kakaoAccount.profile.nickname)
+                .password("password!")
+                .profileImg(this.kakaoAccount.profile.profileImageUrl)
+                .build();
+    }
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+

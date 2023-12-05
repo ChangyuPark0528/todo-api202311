@@ -41,12 +41,11 @@ public class UserService {
 
     @Value("${kakao.client_id}")
     private String KAKAO_CLIENT_ID;
-
     @Value("${kakao.redirect_url}")
     private String KAKAO_REDIRECT_URI;
-
     @Value("${kakao.client_secret}")
     private String KAKAO_CLIENT_SECRET;
+
 
     @Value("${upload.path}")
     private String uploadRootPath;
@@ -54,8 +53,8 @@ public class UserService {
     // 회원 가입 처리
     public UserSignUpResponseDTO create(
             final UserRequestSignUpDTO dto,
-            final String uploadRootPath
-        ) {
+            final String uploadedFilePath
+    ) {
         String email = dto.getEmail();
 
         if(isDuplicate(email)) {
@@ -68,7 +67,7 @@ public class UserService {
         dto.setPassword(encoded);
 
         // dto를 User Entity로 변환해서 저장
-        User saved = userRepository.save(dto.toEntity(uploadRootPath));
+        User saved = userRepository.save(dto.toEntity(uploadedFilePath));
         log.info("회원 가입 정상 수행됨! - saved user - {}", saved);
 
         return new UserSignUpResponseDTO(saved);
@@ -93,18 +92,19 @@ public class UserService {
         String encodedPassword = user.getPassword(); // DB에 저장된 암호화된 비번
 
         if(!passwordEncoder.matches(rawPassword, encodedPassword)) {
-            throw  new RuntimeException("비밀번호가 틀렸습니다.");
+            throw new RuntimeException("비밀번호가 틀렸습니다.");
         }
 
         log.info("{}님 로그인 성공!", user.getUserName());
 
-        // 로그인 성공 후에 클라이언트에게 뭘 리턴할 것인가?
-        // -> JWT를 클라이언트에게 발급해 주어야 한다.
+        // 로그인 성공 후에 클라이언트에게 뭘 리턴할 것인가???
+        // -> JWT를 클라이언트에게 발급해 주어야 한다!
         String token = tokenProvider.createToken(user);
 
         return new LoginResponseDTO(user, token);
 
     }
+
 
     // 프리미엄으로 등급 업
     public LoginResponseDTO promoteToPremium(TokenUserInfo userInfo) {
@@ -115,24 +115,23 @@ public class UserService {
                 );
 
         // 일반(COMMON) 회원이 아니라면 예외 발생
-        if(userInfo.getRole() != Role.COMMON) {
-            throw new IllegalArgumentException("일반 회원이 아니라면 등급을 상승시킬 수 없습니다.");
-        }
+//        if(userInfo.getRole() != Role.COMMON) {
+//            throw new IllegalArgumentException("일반 회원이 아니라면 등급을 상승시킬 수 없습니다.");
+//        }
 
         // 등급 변경
         foundUser.changeRole(Role.PREMIUM);
         User saved = userRepository.save(foundUser);
 
-        // 토큰 재발급 !
+        // 토큰을 재발급! (새롭게 변경된 정보로)
         String token = tokenProvider.createToken(saved);
 
         return new LoginResponseDTO(saved, token);
-
-
     }
 
-    /***
+    /**
      * 업로드 된 파일을 서버에 저장하고 저장 경로를 리턴.
+     *
      * @param profileImg - 업로드 된 파일의 정보
      * @return 실제로 저장된 이미지 경로
      */
@@ -167,12 +166,28 @@ public class UserService {
         log.info("token: {}", accessToken);
 
         // 토큰을 통해 사용자 정보 가져오기
-        getKakaoUserInfo(accessToken);
+        KakaoUserDTO dto = getKakaoUserInfo(accessToken);
+
+        // 일회성 로그인으로 처리 -> dto를 바로 화면단으로 리턴
+        // 회원가입 처리 -> 이메일 중복 검사 진행 -> 자체 jwt를 생성해서 토큰을 화면단에 리턴.
+        // -> 화면단에서는 적절한 url을 선택하여 redirect를 진행.
+
+        if(!isDuplicate(dto.getKakaoAccount().getEmail())) {
+            // 이메일이 중복되지 않았다. -> 이전에 로그인 한적이 없음 -> DB에 데이터를 셋팅.
+            User saved = userRepository.save(dto.toEntity());
+        }
+        // 이메일이 중복됐다? -> 이전에 로그인 한 적이 있다. -> DB에 데이터를 또 넣을 필요는 없다.
+        User foundUser = userRepository.findByEmail(dto.getKakaoAccount().getEmail())
+                .orElseThrow();
+
+        tokenProvider.createToken(foundUser);
+
+
 
 
     }
 
-    private void getKakaoUserInfo(String accessToken) {
+    private KakaoUserDTO getKakaoUserInfo(String accessToken) {
 
         // 요청 uri
         String requestUri = "https://kapi.kakao.com/v2/user/me";
@@ -191,7 +206,7 @@ public class UserService {
         KakaoUserDTO responseData = responseEntity.getBody();
         log.info("user profile: {}", responseData);
 
-
+        return responseData;
     }
 
     private String getKakaoAccessToken(String code) {
@@ -234,7 +249,8 @@ public class UserService {
         return (String) responseData.get("access_token");
     }
 
-    }
+
+}
 
 
 
