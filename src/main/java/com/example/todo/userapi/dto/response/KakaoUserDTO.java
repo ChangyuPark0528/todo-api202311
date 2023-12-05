@@ -35,12 +35,13 @@ public class KakaoUserDTO {
         }
     }
 
-    public User toEntity() {
+    public User toEntity(String accessToken) {
         return User.builder()
                 .email(this.kakaoAccount.email)
                 .userName(this.kakaoAccount.profile.nickname)
                 .password("password!")
                 .profileImg(this.kakaoAccount.profile.profileImageUrl)
+                .accessToken(accessToken)
                 .build();
     }
 
