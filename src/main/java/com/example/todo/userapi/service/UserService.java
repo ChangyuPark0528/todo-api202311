@@ -26,7 +26,12 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -34,6 +39,7 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public class UserService {
+
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -151,21 +157,19 @@ public class UserService {
 //        File uploadFile = new File(uploadRootPath + "/" + uniqueFileName);
 //        profileImg.transferTo(uploadFile);
 
-        // 파일을  S3 버킷에 저장
+        // 파일을 S3 버킷에 저장
         return s3Service.uploadToS3Bucket(profileImg.getBytes(), uniqueFileName);
     }
 
     public String findProfilePath(String userId) {
         User user = userRepository.findById(userId).orElseThrow();
         return user.getProfileImg();
-
 //        String profileImg = user.getProfileImg();
-//        if(profileImg.startsWith("http://")){
+//        if(profileImg.startsWith("http://")) {
 //            return profileImg;
 //        }
-
         // DB에 저장되는 profile_img는 파일명. -> service가 가지고 있는 Root Path와 연결해서 리턴.
-//        return uploadRootPath + "/" + user.getProfileImg();
+//        return uploadRootPath + "/" + profileImg;
     }
 
     public LoginResponseDTO kakaoService(final String code) {
@@ -175,16 +179,15 @@ public class UserService {
         log.info("token: {}", responseData.get("access_token"));
 
         // 토큰을 통해 사용자 정보 가져오기
-        KakaoUserDTO dto = getKakaoUserInfo((String) responseData.get("access_token"));
+        KakaoUserDTO dto = getKakaoUserInfo((String)responseData.get("access_token"));
 
         // 일회성 로그인으로 처리 -> dto를 바로 화면단으로 리턴
         // 회원가입 처리 -> 이메일 중복 검사 진행 -> 자체 jwt를 생성해서 토큰을 화면단에 리턴.
         // -> 화면단에서는 적절한 url을 선택하여 redirect를 진행.
 
         if(!isDuplicate(dto.getKakaoAccount().getEmail())) {
-            // 이메일이 중복되지 않았다. -> 이전에 로그인 한적이 없음 -> DB에 데이터를 셋팅.
-            User saved = userRepository.save(dto.toEntity((String) responseData.get("access_token")));
-            userRepository.save(saved);
+            // 이메일이 중복되지 않았다 -> 이전에 로그인 한 적이 없음 -> DB에 데이터를 세팅
+            User saved = userRepository.save(dto.toEntity((String)responseData.get("access_token")));
         }
         // 이메일이 중복됐다? -> 이전에 로그인 한 적이 있다. -> DB에 데이터를 또 넣을 필요는 없다.
         User foundUser = userRepository.findByEmail(dto.getKakaoAccount().getEmail())
@@ -196,6 +199,7 @@ public class UserService {
         userRepository.save(foundUser);
 
         return new LoginResponseDTO(foundUser, token);
+
     }
 
     private KakaoUserDTO getKakaoUserInfo(String accessToken) {
@@ -259,24 +263,20 @@ public class UserService {
         return responseData;
     }
 
-
     public String logout(TokenUserInfo userInfo) {
-        User foundUser = userRepository.findById(userInfo.getUserId()).orElseThrow();
-        // id를 전달한 사용자의 정보가 foundUser에 들어감
-        // access_token이 null이 아니라면 일반 회원임.
+        User foundUser = userRepository.findById(userInfo.getUserId())
+                .orElseThrow();
 
-        // cntl + alt + v : 자주 쓰는 값 변수화 시켜줌
         String accessToken = foundUser.getAccessToken();
-        if(!accessToken.isEmpty()){
+        if(accessToken != null) {
             String reqUri = "https://kapi.kakao.com/v1/user/logout";
-
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + accessToken);
 
-            // body에 담을 것은 없으니 요청 객체(RestTemplate) 생성해서 헤더 담아준다.
             RestTemplate template = new RestTemplate();
-            ResponseEntity<String> responseEntity = template.exchange(reqUri, HttpMethod.POST, new HttpEntity<>(headers), String.class);
-            return responseEntity.getBody();
+            ResponseEntity<String> responseData
+                    = template.exchange(reqUri, HttpMethod.POST, new HttpEntity<>(headers), String.class);
+            return responseData.getBody();
         }
         return null;
     }

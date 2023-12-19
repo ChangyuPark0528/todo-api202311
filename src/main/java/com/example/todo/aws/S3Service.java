@@ -34,7 +34,7 @@ public class S3Service {
     // s3에 연결해서 인증을 처리하는 로직
     @PostConstruct // S3Service가 생성될 때 1번만 실행되는 아노테이션
     private void initializeAmazon() {
-        // 엑세스 키와 시크릿 키를 이용해서 계정 인증받기
+        // 액세스 키와 시크릿 키를 이용해서 계정 인증 받기
         AwsBasicCredentials credentials
                 = AwsBasicCredentials.create(accessKey, secretKey);
 
@@ -48,22 +48,21 @@ public class S3Service {
      * 버킷에 파일을 업로드하고, 업로드한 버킷의 url 정보를 리턴
      * @param uploadFile - 업로드 할 파일의 실제 raw 데이터
      * @param fileName - 업로드 할 파일명
-     * @return -버킷에 업로드 될 버킷 경로(url)
+     * @return - 버킷에 업로드 된 버킷 경로(url)
      */
-
     public String uploadToS3Bucket(byte[] uploadFile, String fileName) {
 
-        // 업로드 할 파일을 S3 객체로 생성
+        // 업로드 할 파일을 S3 오브젝트로 생성
         PutObjectRequest request
                 = PutObjectRequest.builder()
-                .bucket(bucketName) // 버킷이름
+                .bucket(bucketName) // 버킷 이름
                 .key(fileName) // 파일명
                 .build();
 
         // 오브젝트를 버킷에 업로드(위에서 생성한 오브젝트, 업로드 하고자 하는 파일(바이트 배열)
         s3.putObject(request, RequestBody.fromBytes(uploadFile));
 
-        // 업로드 된 파일의 url릏 반환
+        // 업로드 된 파일의 url을 반환
         return s3.utilities()
                 .getUrl(b -> b.bucket(bucketName).key(fileName))
                 .toString();
@@ -72,4 +71,20 @@ public class S3Service {
 
 
 
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
